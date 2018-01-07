@@ -45,7 +45,7 @@ function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinM
         withdrawTicker: CoinMarketCap.CMCTicker,
         qcxDepositPrice: Big,
         qcxMarketPrice: Big,
-        pair: ShapeshiftIO.MarketInfo): { name: string, percent: string, qcxPercent: string } {
+        pair: ShapeshiftIO.MarketInfo): { name: string, percent: string, qcxPercent: string, minerFee: string } {
         const minerFee = pair.minerFee.times(withdrawTicker.price_cad);
         const depositPrice = Big(depositTicker.price_cad);
         const withdrawPrice = Big(withdrawTicker.price_cad).times(pair.rate).plus(minerFee);
@@ -56,7 +56,8 @@ function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinM
         return {
             name,
             percent,
-            qcxPercent
+            qcxPercent,
+            minerFee: toCurrency(minerFee)
         };
     }
     const results = [
@@ -66,8 +67,8 @@ function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinM
         tradeCost(tickers.eth, tickers.btc, qcxPrices.eth, qcxPrices.btc, pairs.eth_btc),
         tradeCost(tickers.ltc, tickers.eth, qcxPrices.ltc, qcxPrices.eth, pairs.ltc_eth),
         tradeCost(tickers.eth, tickers.ltc, qcxPrices.eth, qcxPrices.ltc, pairs.eth_ltc),
-    ].map(r => `${r.name}: ${r.percent} (Qcx: ${r.qcxPercent})`);
-    return 'Shapeshift.io premiums:\n' + results.join('\n');
+    ].map(r => `${r.name}: ${r.percent} (Qcx: ${r.qcxPercent}) (Miner Fee: ${r.minerFee})`);
+    return 'Shapeshift.io premiums (incl. miner fee):\n' + results.join('\n');
 }
 
 function addBox(text: string, dash: HTMLElement, pre = false) {
