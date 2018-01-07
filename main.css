@@ -2,7 +2,7 @@ body {
     margin: 40px;
     /* font-family: "Open Sans", Arial, Helvetica, Sans-serif; */
     font-family: monospace;
-    font-size: 6em;
+    font-size: 3em;
 }
 
 .wrapper {
@@ -21,7 +21,7 @@ body {
     margin: 5px;
 }
 
-@media screen and (min-width: 2000px) {
+@media screen and (min-width: 1000px) {
     body {
         font-size: 1em; /* 6vmin; */
     }
