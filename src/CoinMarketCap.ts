@@ -39,18 +39,14 @@ interface CMCTicker {
     "market_cap_cad": string;
 }
 
-export async function getPrices(): Promise<Prices> {
-    const uBTC = `https://api.coinmarketcap.com/v1/ticker/bitcoin/?convert=CAD`;
-    const uLTC = `https://api.coinmarketcap.com/v1/ticker/litecoin/?convert=CAD`;
-    const uETH = `https://api.coinmarketcap.com/v1/ticker/ethereum/?convert=CAD`;
-    const uRAI = `https://api.coinmarketcap.com/v1/ticker/raiblocks/?convert=CAD`;
+export function getCadPrices(tickers: Tickers): Prices {
+    const [btc, ltc, eth, rai] = [
+        Big(tickers.btc.price_cad),
+        Big(tickers.ltc.price_cad),
+        Big(tickers.eth.price_cad),
+        Big(tickers.rai.price_cad),
+    ];
 
-    const [btc, ltc, eth, rai] = await Promise.all([
-        _getPrice(uBTC),
-        _getPrice(uLTC),
-        _getPrice(uETH),
-        _getPrice(uRAI),
-    ]);
     return {
         btc,
         ltc,
@@ -59,11 +55,8 @@ export async function getPrices(): Promise<Prices> {
     };
 }
 
-async function _getPrice(url) {
-    return Big(JSON.parse((await request(url)).text)[0].price_cad);
-}
-
 export async function getTickers(): Promise<Tickers> {
+    console.log(`CMCAPI getTickers`);
     const uBTC = `https://api.coinmarketcap.com/v1/ticker/bitcoin/?convert=CAD`;
     const uLTC = `https://api.coinmarketcap.com/v1/ticker/litecoin/?convert=CAD`;
     const uETH = `https://api.coinmarketcap.com/v1/ticker/ethereum/?convert=CAD`;

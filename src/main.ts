@@ -1,6 +1,6 @@
 import { Big } from 'big.js';
 
-import { getTickers as getCMCTickers, getPrices as getCMCPrices } from "./CoinMarketCap";
+import { getTickers as getCMCTickers, getCadPrices } from "./CoinMarketCap";
 import { getPrices as getQuadrigaPrices } from "./QuadrigaAPI";
 import { getShapeshiftCoins, availabilityCount, xrbAvailable, addedRemovedCoins } from "./ShapeshiftIO";
 
@@ -8,13 +8,15 @@ async function main() {
     const dash = document.getElementById('dash');
 
     if (dash) {
-        const [prices, qcxDiffs, ssStats] = await Promise.all([
+        const [cmcTickers, qcxPrices, ssStats] = await Promise.all([
             getCMCTickers(),
-            quadrigaDiffCoinMarketCap(),
+            getQuadrigaPrices(),
             getShapeshiftStats()
         ]);
+
+        const qcxDiffs = quadrigaDiffCoinMarketCap(cmcTickers, qcxPrices);
         zip([
-            [prices.btc, prices.ltc, prices.eth, prices.rai],
+            [cmcTickers.btc, cmcTickers.ltc, cmcTickers.eth, cmcTickers.rai],
             [qcxDiffs.btc, qcxDiffs.ltc, qcxDiffs.eth, null]
         ]).forEach(el => {
             const price = el[0];
@@ -41,11 +43,12 @@ function addBox(text: string, dash: HTMLElement, pre = false) {
 }
 
 const CURRENCIES = ['BTC', 'LTC', 'ETH'];
-async function quadrigaDiffCoinMarketCap() {
+
+function quadrigaDiffCoinMarketCap(cmcTickers, qcxPrices) {
 
     // Calculate how different Quadriga price is from CoinMarketCap
-    const btcCMC = await getCMCPrices();
-    const btcQuad = await getQuadrigaPrices();
+    const btcCMC = getCadPrices(cmcTickers);
+    const btcQuad = qcxPrices;
     const btcCMCArr = [btcCMC.btc, btcCMC.ltc, btcCMC.eth];
     const btcQuadArr = [btcQuad.btc, btcQuad.ltc, btcQuad.eth];
     const prices = zip([CURRENCIES, btcQuadArr, btcCMCArr]);
