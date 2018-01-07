@@ -13,13 +13,18 @@ async function main() {
             quadrigaDiffCoinMarketCap(),
             getShapeshiftStats()
         ]);
-        zip([[prices.btc, prices.ltc, prices.eth], [qcxDiffs.btc, qcxDiffs.ltc, qcxDiffs.eth]]).forEach(el => {
+        zip([
+            [prices.btc, prices.ltc, prices.eth, prices.rai],
+            [qcxDiffs.btc, qcxDiffs.ltc, qcxDiffs.eth, null]
+        ]).forEach(el => {
             const price = el[0];
             const qDiff = el[1];
-            addBox(`${price.symbol}\n` +
+            let boxStr = `${price.symbol}\n` +
                 `Price: ${toCurrency(price.price_cad)}\n` +
                 `1h: ${price.percent_change_1h}%\n1d: ${price.percent_change_24h}%\n` +
-                `7d: ${price.percent_change_7d}%\nQcx Price: ${qDiff}`, dash, true);
+                `7d: ${price.percent_change_7d}%`;
+            if (qDiff) boxStr += `\nQcx Price: ${qDiff}`;
+            addBox(boxStr, dash, true);
         });
 
         addBox(ssStats, dash, true);
