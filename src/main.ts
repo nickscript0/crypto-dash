@@ -29,40 +29,40 @@ async function main() {
             addBox(boxStr, dash, true);
         });
 
+        addBox(shapeshiftPairStats(await ShapeshiftIO.requestMarketInfoPairs(), cmcTickers, qcxPrices), dash, true);
         addBox(getShapeshiftStats(ssCoins), dash, true);
-
-        // Shapeshift arbitrage
-        const pairs = await ShapeshiftIO.requestMarketInfoPairs();
-        addBox(shapeshiftPairStats(pairs, cmcTickers), dash, true);
     }
 }
 
-function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinMarketCap.Tickers) {
-    // const prices = CoinMarketCap.getCadPrices(tickers);
-
-    // Market Price minus Trade price. This is the cut that shapeshift takes compared to market price.
+function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinMarketCap.Tickers, qcxPrices: QuadrigaAPI.Prices) {
+    // Withdraw Price minus Deposit Price. This is the cut that shapeshift takes compared to market price.
     // The lower this number the better (i.e. the closer it is to market price).
     function tradeCost(
         depositTicker: CoinMarketCap.CMCTicker,
-        withdrawTicker: CoinMarketCap.CMCTicker, pairRate: Big): { name: string, percent: string } {
+        withdrawTicker: CoinMarketCap.CMCTicker,
+        qcxDepositPrice: Big,
+        qcxMarketPrice: Big,
+        pairRate: Big): { name: string, percent: string, qcxPercent: string } {
         const depositPrice = Big(depositTicker.price_cad);
         const withdrawPrice = Big(withdrawTicker.price_cad).times(pairRate);
-        const cad = toCurrency(withdrawPrice.minus(depositPrice));
-        const percent = percentMore(withdrawPrice, depositPrice);
+        const percent = percentMore(withdrawPrice, depositPrice, true);
+        const qcxWithdrawPrice = qcxMarketPrice.times(pairRate);
+        const qcxPercent = percentMore(qcxWithdrawPrice, qcxDepositPrice, true);
         const name = `${depositTicker.symbol} -> ${withdrawTicker.symbol}`;
         return {
             name,
-            percent
+            percent,
+            qcxPercent
         };
     }
     const results = [
-        tradeCost(tickers.btc, tickers.ltc, pairs.btc_ltc.rate),
-        tradeCost(tickers.ltc, tickers.btc, pairs.ltc_btc.rate),
-        tradeCost(tickers.btc, tickers.eth, pairs.btc_eth.rate),
-        tradeCost(tickers.eth, tickers.btc, pairs.eth_btc.rate),
-        tradeCost(tickers.ltc, tickers.eth, pairs.ltc_eth.rate),
-        tradeCost(tickers.eth, tickers.ltc, pairs.eth_ltc.rate),
-    ].map(r => `${r.name}: ${r.percent}`);
+        tradeCost(tickers.btc, tickers.ltc, qcxPrices.btc, qcxPrices.ltc, pairs.btc_ltc.rate),
+        tradeCost(tickers.ltc, tickers.btc, qcxPrices.ltc, qcxPrices.btc, pairs.ltc_btc.rate),
+        tradeCost(tickers.btc, tickers.eth, qcxPrices.btc, qcxPrices.eth, pairs.btc_eth.rate),
+        tradeCost(tickers.eth, tickers.btc, qcxPrices.eth, qcxPrices.btc, pairs.eth_btc.rate),
+        tradeCost(tickers.ltc, tickers.eth, qcxPrices.ltc, qcxPrices.eth, pairs.ltc_eth.rate),
+        tradeCost(tickers.eth, tickers.ltc, qcxPrices.eth, qcxPrices.ltc, pairs.eth_ltc.rate),
+    ].map(r => `${r.name}: ${r.percent} (Qcx: ${r.qcxPercent})`);
     return 'Shapeshift.io premiums:\n' + results.join('\n');
 }
 
@@ -108,8 +108,10 @@ function zip(rows) {
     return rows[0].map((_, c) => rows.map(row => row[c]));
 }
 
-function percentMore(a: Big, b: Big): string {
-    return a.minus(b).div(b).times(100).toFixed(2) + '%';
+function percentMore(a: Big, b: Big, padPlus = false): string {
+    const res = a.minus(b).div(b).times(100);
+    const prefix = (padPlus && res.gt(0)) ? ' ' : '';
+    return prefix + res.toFixed(2) + '%';
 }
 
 function toCurrency(n: string | Big) {

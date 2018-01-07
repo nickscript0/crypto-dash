@@ -20,7 +20,7 @@ async function requestCurrentBooks(): Promise<Books> {
 }
 
 
-export async function requestPrices() {
+export async function requestPrices(): Promise<Prices> {
     const res = await requestCurrentBooks();
     return {
         btc: Big(res.btc.last),
@@ -46,4 +46,11 @@ export interface Books {
     eth: QuadrigaBook;
     ltc: QuadrigaBook;
     bch: QuadrigaBook;
+}
+
+export interface Prices {
+    btc: Big;
+    eth: Big;
+    ltc: Big;
+    bch: Big;
 }
