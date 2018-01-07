@@ -8,8 +8,11 @@ async function main() {
     const dash = document.getElementById('dash');
 
     if (dash) {
-        const prices = await getCMCTickers();
-        const qcxDiffs = await quadrigaDiffCoinMarketCap();
+        const [prices, qcxDiffs, ssStats] = await Promise.all([
+            getCMCTickers(),
+            quadrigaDiffCoinMarketCap(),
+            getShapeshiftStats()
+        ]);
         zip([[prices.btc, prices.ltc, prices.eth], [qcxDiffs.btc, qcxDiffs.ltc, qcxDiffs.eth]]).forEach(el => {
             const price = el[0];
             const qDiff = el[1];
@@ -19,7 +22,7 @@ async function main() {
                 `7d: ${price.percent_change_7d}%\nQcx Price: ${qDiff}`, dash, true);
         });
 
-        addBox(await getShapeshiftStats(), dash, true);
+        addBox(ssStats, dash, true);
 
     }
 }
