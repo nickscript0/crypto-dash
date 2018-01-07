@@ -38,18 +38,19 @@ async function main() {
 }
 
 function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinMarketCap.Tickers, qcxPrices: QuadrigaAPI.Prices) {
-    // Withdraw Price minus Deposit Price. This is the cut that shapeshift takes compared to market price.
+    // Withdraw Price (plus miner fee) minus Deposit Price. This is the cut that shapeshift takes compared to market price.
     // The lower this number the better (i.e. the closer it is to market price).
     function tradeCost(
         depositTicker: CoinMarketCap.CMCTicker,
         withdrawTicker: CoinMarketCap.CMCTicker,
         qcxDepositPrice: Big,
         qcxMarketPrice: Big,
-        pairRate: Big): { name: string, percent: string, qcxPercent: string } {
+        pair: ShapeshiftIO.MarketInfo): { name: string, percent: string, qcxPercent: string } {
+        const minerFee = pair.minerFee.times(withdrawTicker.price_cad);
         const depositPrice = Big(depositTicker.price_cad);
-        const withdrawPrice = Big(withdrawTicker.price_cad).times(pairRate);
+        const withdrawPrice = Big(withdrawTicker.price_cad).times(pair.rate).plus(minerFee);
         const percent = percentMore(withdrawPrice, depositPrice, true);
-        const qcxWithdrawPrice = qcxMarketPrice.times(pairRate);
+        const qcxWithdrawPrice = qcxMarketPrice.times(pair.rate).plus(minerFee);
         const qcxPercent = percentMore(qcxWithdrawPrice, qcxDepositPrice, true);
         const name = `${depositTicker.symbol} -> ${withdrawTicker.symbol}`;
         return {
@@ -59,12 +60,12 @@ function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinM
         };
     }
     const results = [
-        tradeCost(tickers.btc, tickers.ltc, qcxPrices.btc, qcxPrices.ltc, pairs.btc_ltc.rate),
-        tradeCost(tickers.ltc, tickers.btc, qcxPrices.ltc, qcxPrices.btc, pairs.ltc_btc.rate),
-        tradeCost(tickers.btc, tickers.eth, qcxPrices.btc, qcxPrices.eth, pairs.btc_eth.rate),
-        tradeCost(tickers.eth, tickers.btc, qcxPrices.eth, qcxPrices.btc, pairs.eth_btc.rate),
-        tradeCost(tickers.ltc, tickers.eth, qcxPrices.ltc, qcxPrices.eth, pairs.ltc_eth.rate),
-        tradeCost(tickers.eth, tickers.ltc, qcxPrices.eth, qcxPrices.ltc, pairs.eth_ltc.rate),
+        tradeCost(tickers.btc, tickers.ltc, qcxPrices.btc, qcxPrices.ltc, pairs.btc_ltc),
+        tradeCost(tickers.ltc, tickers.btc, qcxPrices.ltc, qcxPrices.btc, pairs.ltc_btc),
+        tradeCost(tickers.btc, tickers.eth, qcxPrices.btc, qcxPrices.eth, pairs.btc_eth),
+        tradeCost(tickers.eth, tickers.btc, qcxPrices.eth, qcxPrices.btc, pairs.eth_btc),
+        tradeCost(tickers.ltc, tickers.eth, qcxPrices.ltc, qcxPrices.eth, pairs.ltc_eth),
+        tradeCost(tickers.eth, tickers.ltc, qcxPrices.eth, qcxPrices.ltc, pairs.eth_ltc),
     ].map(r => `${r.name}: ${r.percent} (Qcx: ${r.qcxPercent})`);
     return 'Shapeshift.io premiums:\n' + results.join('\n');
 }
