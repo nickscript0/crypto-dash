@@ -8,10 +8,11 @@ async function main() {
     const dash = document.getElementById('dash');
 
     if (dash) {
-        const [cmcTickers, qcxPrices, ssCoins] = await Promise.all([
+        const [cmcTickers, qcxPrices, ssCoins, ssPairs] = await Promise.all([
             CoinMarketCap.requestTickers(),
             QuadrigaAPI.requestPrices(),
-            ShapeshiftIO.requestShapeshiftCoins()
+            ShapeshiftIO.requestShapeshiftCoins(),
+            ShapeshiftIO.requestMarketInfoPairs()
         ]);
 
         const qcxDiffs = quadrigaDiffCoinMarketCap(cmcTickers, qcxPrices);
@@ -29,7 +30,7 @@ async function main() {
             addBox(boxStr, dash, true);
         });
 
-        addBox(shapeshiftPairStats(await ShapeshiftIO.requestMarketInfoPairs(), cmcTickers, qcxPrices), dash, true);
+        addBox(shapeshiftPairStats(ssPairs, cmcTickers, qcxPrices), dash, true);
         addBox(getShapeshiftStats(ssCoins), dash, true);
     }
 }
