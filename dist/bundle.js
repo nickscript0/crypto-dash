@@ -1974,6 +1974,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const CoinMarketCap_1 = __webpack_require__(4);
 const QuadrigaAPI_1 = __webpack_require__(10);
+const ShapeshiftIO_1 = __webpack_require__(11);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         const dash = document.getElementById('dash');
@@ -1985,6 +1986,7 @@ function main() {
                     `1h: ${p.percent_change_1h}%\n1d: ${p.percent_change_24h}%\n7d: ${p.percent_change_7d}%`, dash);
             });
             addBox((yield quadrigaDiffCoinMarketCap()).join('\n'), dash);
+            addBox(yield getShapeshiftStats(), dash);
         }
     });
 }
@@ -2008,7 +2010,20 @@ function quadrigaDiffCoinMarketCap() {
         return pricesStr;
     });
 }
-exports.quadrigaDiffCoinMarketCap = quadrigaDiffCoinMarketCap;
+function getShapeshiftStats() {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Shapeshift.io stats
+        const shapeshiftCoins = yield ShapeshiftIO_1.getShapeshiftCoins();
+        const ssCounts = ShapeshiftIO_1.availabilityCount(shapeshiftCoins);
+        const { addedCoins, removedCoins } = ShapeshiftIO_1.addedRemovedCoins(shapeshiftCoins);
+        const addedCoinsText = addedCoins.size > 0 ? `\nAdded Coins: ${[...addedCoins].join(',')}` : '';
+        const removedCoinsText = removedCoins.size > 0 ? `\nRemoved Coins: ${[...removedCoins].join(',')}` : '';
+        const xrbExistTextFrag = ShapeshiftIO_1.xrbAvailable(shapeshiftCoins) ? 'exists on' : 'does not exist on';
+        const xrbExistText = `\nRaiBlocks (XRB) ${xrbExistTextFrag} Shapeshift.io`;
+        return `Shapeshift.io has ${ssCounts.percentAvailable}% coins available (${ssCounts.unavailable} unavailable)` +
+            xrbExistText + addedCoinsText + removedCoinsText;
+    });
+}
 function zip(rows) {
     return rows[0].map((_, c) => rows.map(row => row[c]));
 }
@@ -3263,6 +3278,73 @@ function getPrices() {
     });
 }
 exports.getPrices = getPrices;
+
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+// https://shapeshift.io/getcoins
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const request = __webpack_require__(0);
+function getShapeshiftCoins() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const url = `https://shapeshift.io/getcoins`;
+        return _getPriceRaw(url);
+    });
+}
+exports.getShapeshiftCoins = getShapeshiftCoins;
+function _getPriceRaw(url) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return JSON.parse((yield request(url)).text);
+    });
+}
+function availabilityCount(coins) {
+    const total = Object.values(coins).length;
+    const available = Object.values(coins).filter(c => c.status === 'available').length;
+    const unavailable = total - available;
+    const percentAvailable = ((available / total) * 100).toFixed(1);
+    return {
+        available,
+        unavailable,
+        percentAvailable
+    };
+}
+exports.availabilityCount = availabilityCount;
+function xrbAvailable(coins) {
+    const XRB_NAME = 'raiblocks';
+    const XRB_SYMBOL = 'xrb';
+    const filterXrb = Object.values(coins)
+        .filter(c => c.name.toLowerCase().includes(XRB_NAME) ||
+        c.symbol.toLowerCase().includes(XRB_SYMBOL));
+    return filterXrb.length > 0;
+}
+exports.xrbAvailable = xrbAvailable;
+// All shapeshift.io coins updated Jan 3, 2017 from
+// JSON.stringify(Object.values(coins).map(c => c.symbol));
+const ALL_COINS = ["BTC", "1ST", "ANT", "BAT", "BNT", "BCH", "BCY", "BLK", "BTCD", "BTS", "CVC", "CLAM", "DASH", "DCR", "DGB", "DNT", "DOGE", "EMC", "EDG", "EOS", "ETH", "ETC", "FCT", "FUN", "GAME", "GNO", "GNT", "GUP", "KMD", "LBC", "LSK", "LTC", "MAID", "MLN", "MTL", "MONA", "MSC", "NEO", "NBT", "NMC", "XEM", "NMR", "NVC", "NXT", "OMG", "POT", "PPC", "QTUM", "REP", "RDD", "RCN", "RLC", "SALT", "SC", "SNT", "STORJ", "START", "STEEM", "SNGLS", "SWT", "TRST", "USDT", "VOX", "VRC", "VTC", "WAVES", "WINGS", "XCP", "XMR", "XRP", "ZEC", "ZRX"];
+function addedRemovedCoins(coins) {
+    const savedSet = new Set(ALL_COINS);
+    const currentSet = new Set(Object.values(coins).map(c => c.symbol));
+    const diff = (a, b) => new Set([...a].filter(x => !b.has(x)));
+    const addedCoins = diff(currentSet, savedSet);
+    const removedCoins = diff(savedSet, currentSet);
+    return {
+        addedCoins,
+        removedCoins
+    };
+}
+exports.addedRemovedCoins = addedRemovedCoins;
 
 
 /***/ })

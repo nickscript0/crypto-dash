@@ -2,7 +2,7 @@ import { Big } from 'big.js';
 
 import { getTickers as getCMCTickers, getPrices as getCMCPrices } from "./CoinMarketCap";
 import { getPrices as getQuadrigaPrices } from "./QuadrigaAPI";
-
+import { getShapeshiftCoins, availabilityCount, xrbAvailable, addedRemovedCoins } from "./ShapeshiftIO";
 
 async function main() {
     const dash = document.getElementById('dash');
@@ -16,6 +16,7 @@ async function main() {
         });
 
         addBox((await quadrigaDiffCoinMarketCap()).join('\n'), dash);
+        addBox(await getShapeshiftStats(), dash);
 
     }
 }
@@ -28,7 +29,7 @@ function addBox(text: string, dash: HTMLElement) {
 }
 
 const CURRENCIES = ['BTC', 'LTC', 'ETH'];
-export async function quadrigaDiffCoinMarketCap(): Promise<string[]> {
+async function quadrigaDiffCoinMarketCap(): Promise<string[]> {
 
     // Calculate how different Quadriga price is from CoinMarketCap
     const btcCMC = await getCMCPrices();
@@ -41,6 +42,19 @@ export async function quadrigaDiffCoinMarketCap(): Promise<string[]> {
         `CoinMarketCap=${toCurrency(p[2])} (${percentMore(p[1], p[2])} more expensive)`);
     return pricesStr;
 
+}
+
+async function getShapeshiftStats() {
+    // Shapeshift.io stats
+    const shapeshiftCoins = await getShapeshiftCoins();
+    const ssCounts = availabilityCount(shapeshiftCoins);
+    const { addedCoins, removedCoins } = addedRemovedCoins(shapeshiftCoins);
+    const addedCoinsText = addedCoins.size > 0 ? `\nAdded Coins: ${[...addedCoins].join(',')}` : '';
+    const removedCoinsText = removedCoins.size > 0 ? `\nRemoved Coins: ${[...removedCoins].join(',')}` : '';
+    const xrbExistTextFrag = xrbAvailable(shapeshiftCoins) ? 'exists on' : 'does not exist on';
+    const xrbExistText = `\nRaiBlocks (XRB) ${xrbExistTextFrag} Shapeshift.io`;
+    return `Shapeshift.io has ${ssCounts.percentAvailable}% coins available (${ssCounts.unavailable} unavailable)` +
+        xrbExistText + addedCoinsText + removedCoinsText;
 }
 
 function zip(rows) {
