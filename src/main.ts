@@ -12,17 +12,18 @@ async function main() {
         [prices.btc, prices.eth, prices.ltc, prices.rai].forEach(p => {
             addBox(`${p.symbol}\n` +
                 `Price: ${toCurrency(p.price_cad)}\n` +
-                `1h: ${p.percent_change_1h}%\n1d: ${p.percent_change_24h}%\n7d: ${p.percent_change_7d}%`, dash);
+                `1h: ${p.percent_change_1h}%\n1d: ${p.percent_change_24h}%\n7d: ${p.percent_change_7d}%`, dash, true);
         });
 
-        addBox((await quadrigaDiffCoinMarketCap()).join('\n'), dash);
-        addBox(await getShapeshiftStats(), dash);
+        addBox((await quadrigaDiffCoinMarketCap()).join('\n'), dash, true);
+        addBox(await getShapeshiftStats(), dash, true);
 
     }
 }
 
-function addBox(text: string, dash: HTMLElement) {
-    const div = document.createElement('pre');
+function addBox(text: string, dash: HTMLElement, pre = false) {
+    const tagName = pre ? 'pre' : 'div';
+    const div = document.createElement(tagName);
     div.textContent = text;
     div.className = 'box';
     dash.appendChild(div);
