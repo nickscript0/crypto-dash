@@ -1,0 +1,27 @@
+body {
+    margin: 40px;
+    font-family: "Open Sans", Arial, Helvetica, Sans-serif;
+}
+
+.wrapper {
+    display: flex;
+    flex-wrap: wrap;
+
+    background-color: #fff;
+    color: #444;
+}
+
+.box {
+    background-color: #ccc;
+    color: #000;
+    /* background-color: #444; */
+    /* color: #fff; */
+    border-radius: 5px;
+    padding: 20px;
+    font-size: 100%;
+    margin: 5px;
+}
+
+.wide {
+    /* grid-column: span 2; */
+}
