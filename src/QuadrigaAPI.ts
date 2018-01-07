@@ -11,17 +11,17 @@ export async function getCurrentBooks(): Promise<Books> {
     const BCH_BOOK = 'bch_cad';
 
     const [btc, eth, ltc, bch] = await Promise.all([
-        JSON.parse((await request(REQ_TICKER + BTC_BOOK)).text),
-        JSON.parse((await request(REQ_TICKER + ETH_BOOK)).text),
-        JSON.parse((await request(REQ_TICKER + LTC_BOOK)).text),
-        JSON.parse((await request(REQ_TICKER + BCH_BOOK)).text),
+        request(REQ_TICKER + BTC_BOOK),
+        request(REQ_TICKER + ETH_BOOK),
+        request(REQ_TICKER + LTC_BOOK),
+        request(REQ_TICKER + BCH_BOOK),
     ]);
 
     return {
-        btc,
-        eth,
-        ltc,
-        bch,
+        btc: JSON.parse(btc.text),
+        eth: JSON.parse(eth.text),
+        ltc: JSON.parse(ltc.text),
+        bch: JSON.parse(bch.text),
     };
 }
 
