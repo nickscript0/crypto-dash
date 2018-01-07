@@ -9,13 +9,16 @@ async function main() {
 
     if (dash) {
         const prices = await getCMCTickers();
-        [prices.btc, prices.eth, prices.ltc, prices.rai].forEach(p => {
-            addBox(`${p.symbol}\n` +
-                `Price: ${toCurrency(p.price_cad)}\n` +
-                `1h: ${p.percent_change_1h}%\n1d: ${p.percent_change_24h}%\n7d: ${p.percent_change_7d}%`, dash, true);
+        const qcxDiffs = await quadrigaDiffCoinMarketCap();
+        zip([[prices.btc, prices.ltc, prices.eth], [qcxDiffs.btc, qcxDiffs.ltc, qcxDiffs.eth]]).forEach(el => {
+            const price = el[0];
+            const qDiff = el[1];
+            addBox(`${price.symbol}\n` +
+                `Price: ${toCurrency(price.price_cad)}\n` +
+                `1h: ${price.percent_change_1h}%\n1d: ${price.percent_change_24h}%\n` +
+                `7d: ${price.percent_change_7d}%\nQcx Price: ${qDiff}`, dash, true);
         });
 
-        addBox((await quadrigaDiffCoinMarketCap()).join('\n'), dash, true);
         addBox(await getShapeshiftStats(), dash, true);
 
     }
@@ -30,7 +33,7 @@ function addBox(text: string, dash: HTMLElement, pre = false) {
 }
 
 const CURRENCIES = ['BTC', 'LTC', 'ETH'];
-async function quadrigaDiffCoinMarketCap(): Promise<string[]> {
+async function quadrigaDiffCoinMarketCap() {
 
     // Calculate how different Quadriga price is from CoinMarketCap
     const btcCMC = await getCMCPrices();
@@ -39,10 +42,12 @@ async function quadrigaDiffCoinMarketCap(): Promise<string[]> {
     const btcQuadArr = [btcQuad.btc, btcQuad.ltc, btcQuad.eth];
     const prices = zip([CURRENCIES, btcQuadArr, btcCMCArr]);
 
-    const pricesStr = prices.map(p => `${p[0]}: Quadriga=${toCurrency(p[1])} ` +
-        `CoinMarketCap=${toCurrency(p[2])} (${percentMore(p[1], p[2])} more expensive)`);
-    return pricesStr;
-
+    const [btc, ltc, eth]: string = prices.map(p => percentMore(p[1], p[2]));
+    return {
+        btc,
+        ltc,
+        eth
+    };
 }
 
 async function getShapeshiftStats() {
