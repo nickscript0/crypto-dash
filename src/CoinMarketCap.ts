@@ -11,14 +11,14 @@ interface Prices {
     rai: Big;
 }
 
-interface Tickers {
+export interface Tickers {
     btc: CMCTicker;
     ltc: CMCTicker;
     eth: CMCTicker;
     rai: CMCTicker;
 }
 
-interface CMCTicker {
+export interface CMCTicker {
     "id": string;
     "name": string;
     "symbol": string;
@@ -55,8 +55,7 @@ export function getCadPrices(tickers: Tickers): Prices {
     };
 }
 
-export async function getTickers(): Promise<Tickers> {
-    console.log(`CMCAPI getTickers`);
+export async function requestTickers(): Promise<Tickers> {
     const uBTC = `https://api.coinmarketcap.com/v1/ticker/bitcoin/?convert=CAD`;
     const uLTC = `https://api.coinmarketcap.com/v1/ticker/litecoin/?convert=CAD`;
     const uETH = `https://api.coinmarketcap.com/v1/ticker/ethereum/?convert=CAD`;

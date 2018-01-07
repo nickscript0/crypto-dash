@@ -1,17 +1,17 @@
 import { Big } from 'big.js';
 
-import { getTickers as getCMCTickers, getCadPrices } from "./CoinMarketCap";
-import { getPrices as getQuadrigaPrices } from "./QuadrigaAPI";
-import { getShapeshiftCoins, availabilityCount, xrbAvailable, addedRemovedCoins } from "./ShapeshiftIO";
+import * as CoinMarketCap from "./CoinMarketCap";
+import * as QuadrigaAPI from "./QuadrigaAPI";
+import * as ShapeshiftIO from "./ShapeshiftIO";
 
 async function main() {
     const dash = document.getElementById('dash');
 
     if (dash) {
-        const [cmcTickers, qcxPrices, ssStats] = await Promise.all([
-            getCMCTickers(),
-            getQuadrigaPrices(),
-            getShapeshiftStats()
+        const [cmcTickers, qcxPrices, ssCoins] = await Promise.all([
+            CoinMarketCap.requestTickers(),
+            QuadrigaAPI.requestPrices(),
+            ShapeshiftIO.requestShapeshiftCoins()
         ]);
 
         const qcxDiffs = quadrigaDiffCoinMarketCap(cmcTickers, qcxPrices);
@@ -29,9 +29,41 @@ async function main() {
             addBox(boxStr, dash, true);
         });
 
-        addBox(ssStats, dash, true);
+        addBox(getShapeshiftStats(ssCoins), dash, true);
 
+        // Shapeshift arbitrage
+        const pairs = await ShapeshiftIO.requestMarketInfoPairs();
+        addBox(shapeshiftPairStats(pairs, cmcTickers), dash, true);
     }
+}
+
+function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinMarketCap.Tickers) {
+    // const prices = CoinMarketCap.getCadPrices(tickers);
+
+    // Market Price minus Trade price. This is the cut that shapeshift takes compared to market price.
+    // The lower this number the better (i.e. the closer it is to market price).
+    function tradeCost(
+        depositTicker: CoinMarketCap.CMCTicker,
+        withdrawTicker: CoinMarketCap.CMCTicker, pairRate: Big): { name: string, percent: string } {
+        const depositPrice = Big(depositTicker.price_cad);
+        const withdrawPrice = Big(withdrawTicker.price_cad).times(pairRate);
+        const cad = toCurrency(withdrawPrice.minus(depositPrice));
+        const percent = percentMore(withdrawPrice, depositPrice);
+        const name = `${depositTicker.symbol} -> ${withdrawTicker.symbol}`;
+        return {
+            name,
+            percent
+        };
+    }
+    const results = [
+        tradeCost(tickers.btc, tickers.ltc, pairs.btc_ltc.rate),
+        tradeCost(tickers.ltc, tickers.btc, pairs.ltc_btc.rate),
+        tradeCost(tickers.btc, tickers.eth, pairs.btc_eth.rate),
+        tradeCost(tickers.eth, tickers.btc, pairs.eth_btc.rate),
+        tradeCost(tickers.ltc, tickers.eth, pairs.ltc_eth.rate),
+        tradeCost(tickers.eth, tickers.ltc, pairs.eth_ltc.rate),
+    ].map(r => `${r.name}: ${r.percent}`);
+    return 'Shapeshift.io premiums:\n' + results.join('\n');
 }
 
 function addBox(text: string, dash: HTMLElement, pre = false) {
@@ -47,7 +79,7 @@ const CURRENCIES = ['BTC', 'LTC', 'ETH'];
 function quadrigaDiffCoinMarketCap(cmcTickers, qcxPrices) {
 
     // Calculate how different Quadriga price is from CoinMarketCap
-    const btcCMC = getCadPrices(cmcTickers);
+    const btcCMC = CoinMarketCap.getCadPrices(cmcTickers);
     const btcQuad = qcxPrices;
     const btcCMCArr = [btcCMC.btc, btcCMC.ltc, btcCMC.eth];
     const btcQuadArr = [btcQuad.btc, btcQuad.ltc, btcQuad.eth];
@@ -61,14 +93,12 @@ function quadrigaDiffCoinMarketCap(cmcTickers, qcxPrices) {
     };
 }
 
-async function getShapeshiftStats() {
-    // Shapeshift.io stats
-    const shapeshiftCoins = await getShapeshiftCoins();
-    const ssCounts = availabilityCount(shapeshiftCoins);
-    const { addedCoins, removedCoins } = addedRemovedCoins(shapeshiftCoins);
+function getShapeshiftStats(shapeshiftCoins) {
+    const ssCounts = ShapeshiftIO.availabilityCount(shapeshiftCoins);
+    const { addedCoins, removedCoins } = ShapeshiftIO.addedRemovedCoins(shapeshiftCoins);
     const addedCoinsText = addedCoins.size > 0 ? `\nAdded Coins: ${[...addedCoins].join(',')}` : '';
     const removedCoinsText = removedCoins.size > 0 ? `\nRemoved Coins: ${[...removedCoins].join(',')}` : '';
-    const xrbExistTextFrag = xrbAvailable(shapeshiftCoins) ? 'exists on' : 'does not exist on';
+    const xrbExistTextFrag = ShapeshiftIO.xrbAvailable(shapeshiftCoins) ? 'exists on' : 'does not exist on';
     const xrbExistText = `\nRaiBlocks (XRB) ${xrbExistTextFrag} Shapeshift.io`;
     return `Shapeshift.io has ${ssCounts.percentAvailable}% coins available (${ssCounts.unavailable} unavailable)` +
         xrbExistText + addedCoinsText + removedCoinsText;
@@ -82,7 +112,8 @@ function percentMore(a: Big, b: Big): string {
     return a.minus(b).div(b).times(100).toFixed(2) + '%';
 }
 
-function toCurrency(n: string) {
+function toCurrency(n: string | Big) {
+    if (n instanceof Big) n = n.toString();
     return parseFloat(n).toLocaleString('en-US', {
         style: 'currency',
         currency: 'USD',

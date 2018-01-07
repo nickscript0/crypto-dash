@@ -3,7 +3,7 @@
 import * as request from "superagent";
 import { Big } from 'big.js';
 
-export async function getCurrentBooks(): Promise<Books> {
+async function requestCurrentBooks(): Promise<Books> {
     const REQ_TICKER = `https://api.quadrigacx.com/v2/ticker?book=all`;
     const BTC_BOOK = 'btc_cad';
     const ETH_BOOK = 'eth_cad';
@@ -20,8 +20,8 @@ export async function getCurrentBooks(): Promise<Books> {
 }
 
 
-export async function getPrices() {
-    const res = await getCurrentBooks();
+export async function requestPrices() {
+    const res = await requestCurrentBooks();
     return {
         btc: Big(res.btc.last),
         eth: Big(res.eth.last),

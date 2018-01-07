@@ -1,6 +1,7 @@
 // https://shapeshift.io/getcoins
 
 import * as request from "superagent";
+import { Big } from 'big.js';
 
 interface Coins {
     [key: string]: Coin;
@@ -14,12 +15,62 @@ interface Coin {
     "status": string;
 }
 
-export async function getShapeshiftCoins(): Promise<Coins> {
-    const url = `https://shapeshift.io/getcoins`;
-    return _getPriceRaw(url);
+// "A coin pair is of the format deposit_withdrawal. Example: 'btc_ltc'."
+export interface MarketInfo {
+    "pair": string;
+    "rate": Big;
+    "limit": Big;
+    "min": Big;
+    "minerFee": Big;
 }
 
-async function _getPriceRaw(url) {
+export interface MarketInfoPairs {
+    btc_ltc: MarketInfo;
+    ltc_btc: MarketInfo;
+    eth_btc: MarketInfo;
+    btc_eth: MarketInfo;
+    ltc_eth: MarketInfo;
+    eth_ltc: MarketInfo;
+}
+
+export async function requestShapeshiftCoins(): Promise<Coins> {
+    const url = `https://shapeshift.io/getcoins`;
+    return _getJson(url);
+}
+
+const PAIRS_ARR = [
+    'btc_ltc',
+    'ltc_btc',
+    'eth_btc',
+    'btc_eth',
+    'ltc_eth',
+    'eth_ltc',
+];
+
+/**
+ * @returns an array of MarketInfo pairs indexed by PAIRS
+ */
+export async function requestMarketInfoPairs(): Promise<MarketInfoPairs> {
+    const base = `https://shapeshift.io/marketinfo/`;
+    const results = await Promise.all(PAIRS_ARR.map(p => request(base + p)));
+    const pairsArr = results.map(r => <MarketInfo>_attrToBig(JSON.parse(r.text), ['rate', 'limit', 'min', 'minerFee']));
+    const miPairs = {};
+    pairsArr.forEach((p, i) => {
+        miPairs[PAIRS_ARR[i]] = p;
+    });
+    return <MarketInfoPairs>miPairs;
+}
+
+function _attrToBig(src: object, attrs: string[]) {
+    const dst = {};
+    Object.entries(src).forEach(a => {
+        const [k, v] = a;
+        dst[k] = attrs.includes(k) ? Big(v) : v;
+    });
+    return dst;
+}
+
+async function _getJson(url) {
     return JSON.parse((await request(url)).text);
 }
 
