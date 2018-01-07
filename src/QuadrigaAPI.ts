@@ -4,24 +4,18 @@ import * as request from "superagent";
 import { Big } from 'big.js';
 
 export async function getCurrentBooks(): Promise<Books> {
-    const REQ_TICKER = `https://api.quadrigacx.com/v2/ticker?book=`;
+    const REQ_TICKER = `https://api.quadrigacx.com/v2/ticker?book=all`;
     const BTC_BOOK = 'btc_cad';
     const ETH_BOOK = 'eth_cad';
     const LTC_BOOK = 'ltc_cad';
     const BCH_BOOK = 'bch_cad';
-
-    const [btc, eth, ltc, bch] = await Promise.all([
-        request(REQ_TICKER + BTC_BOOK),
-        request(REQ_TICKER + ETH_BOOK),
-        request(REQ_TICKER + LTC_BOOK),
-        request(REQ_TICKER + BCH_BOOK),
-    ]);
+    const all = JSON.parse((await request(REQ_TICKER)).text);
 
     return {
-        btc: JSON.parse(btc.text),
-        eth: JSON.parse(eth.text),
-        ltc: JSON.parse(ltc.text),
-        bch: JSON.parse(bch.text),
+        btc: all[BTC_BOOK],
+        eth: all[ETH_BOOK],
+        ltc: all[LTC_BOOK],
+        bch: all[BCH_BOOK],
     };
 }
 
