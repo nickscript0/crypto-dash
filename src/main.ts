@@ -8,14 +8,16 @@ async function main() {
     const dash = document.getElementById('dash');
 
     if (dash) {
-        const [cmcTickers, qcxPrices, ssCoins, ssPairs] = await Promise.all([
-            CoinMarketCap.requestTickers(),
-            QuadrigaAPI.requestPrices(),
-            ShapeshiftIO.requestShapeshiftCoins(),
-            ShapeshiftIO.requestMarketInfoPairs()
-        ]);
+        // This is slightly faster than "await Promise.all" as it won't block waiting for all requests to complete
+        const cmcTickersPromise = CoinMarketCap.requestTickers();
+        const qcxPricesPromise = QuadrigaAPI.requestPrices();
+        const ssCoinsPromise = ShapeshiftIO.requestShapeshiftCoins();
+        const ssPairsPromise = ShapeshiftIO.requestMarketInfoPairs();
 
+        const cmcTickers = await cmcTickersPromise;
+        const qcxPrices = await qcxPricesPromise;
         const qcxDiffs = quadrigaDiffCoinMarketCap(cmcTickers, qcxPrices);
+
         zip([
             [cmcTickers.btc, cmcTickers.ltc, cmcTickers.eth, cmcTickers.rai],
             [qcxDiffs.btc, qcxDiffs.ltc, qcxDiffs.eth, null]
@@ -30,8 +32,8 @@ async function main() {
             addBox(boxStr, dash, true);
         });
 
-        addBox(shapeshiftPairStats(ssPairs, cmcTickers, qcxPrices), dash, true);
-        addBox(getShapeshiftStats(ssCoins), dash, true);
+        addBox(shapeshiftPairStats(await ssPairsPromise, cmcTickers, qcxPrices), dash, true);
+        addBox(getShapeshiftStats(await ssCoinsPromise), dash, true);
     }
 }
 
