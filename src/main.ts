@@ -32,7 +32,7 @@ export async function quadrigaDiffCoinMarketCap(): Promise<string[]> {
 
     // Calculate how different Quadriga price is from CoinMarketCap
     const btcCMC = await getCMCPrices();
-    const btcQuad = (await getQuadrigaPrices());
+    const btcQuad = await getQuadrigaPrices();
     const btcCMCArr = [btcCMC.btc, btcCMC.ltc, btcCMC.eth];
     const btcQuadArr = [btcQuad.btc, btcQuad.ltc, btcQuad.eth];
     const prices = zip([CURRENCIES, btcQuadArr, btcCMCArr]);

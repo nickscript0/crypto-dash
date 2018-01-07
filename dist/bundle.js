@@ -1999,7 +1999,7 @@ function quadrigaDiffCoinMarketCap() {
     return __awaiter(this, void 0, void 0, function* () {
         // Calculate how different Quadriga price is from CoinMarketCap
         const btcCMC = yield CoinMarketCap_1.getPrices();
-        const btcQuad = (yield QuadrigaAPI_1.getPrices());
+        const btcQuad = yield QuadrigaAPI_1.getPrices();
         const btcCMCArr = [btcCMC.btc, btcCMC.ltc, btcCMC.eth];
         const btcQuadArr = [btcQuad.btc, btcQuad.ltc, btcQuad.eth];
         const prices = zip([CURRENCIES, btcQuadArr, btcCMCArr]);
