@@ -1,4 +1,5 @@
 import { Big } from 'big.js';
+import * as moment from 'moment';
 
 import * as CoinMarketCap from "./CoinMarketCap";
 import * as QuadrigaAPI from "./QuadrigaAPI";
@@ -34,6 +35,8 @@ async function main() {
 
         addBox(shapeshiftPairStats(await ssPairsPromise, cmcTickers, qcxPrices), dash, true);
         addBox(getShapeshiftStats(await ssCoinsPromise), dash, true);
+
+        updateLoadTime();
     }
 }
 
@@ -77,6 +80,17 @@ function addBox(text: string, dash: HTMLElement, pre = false) {
     div.textContent = text;
     div.className = 'box';
     dash.appendChild(div);
+}
+
+function updateLoadTime(loadTime: moment.Moment | null = null) {
+    const tsEl = document.getElementById('timestamp');
+    if (!loadTime) loadTime = moment();
+    if (tsEl) {
+        const absTime = loadTime.format('MMMM Do YYYY, h:mm:ss a');
+        const relTime = loadTime.fromNow();
+        tsEl.textContent = `Updated: ${absTime} (${relTime})`;
+    }
+    setTimeout(updateLoadTime, 10000, loadTime);
 }
 
 const CURRENCIES = ['BTC', 'LTC', 'ETH'];
