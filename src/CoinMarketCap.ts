@@ -4,11 +4,17 @@ import * as request from "superagent";
 
 import { Big } from 'big.js';
 
+
+const TICKERS = ['BTC', 'ETH', 'LTC', 'XRB', 'ARK', 'SALT', 'TRX'];
+
 interface Prices {
     btc: Big;
     ltc: Big;
     eth: Big;
-    rai: Big;
+    xrb: Big;
+    ark: Big;
+    salt: Big;
+    trx: Big;
 }
 
 export interface Tickers {
@@ -16,6 +22,9 @@ export interface Tickers {
     ltc: CMCTicker;
     eth: CMCTicker;
     xrb: CMCTicker;
+    ark: CMCTicker;
+    salt: CMCTicker;
+    trx: CMCTicker;
 }
 
 export interface CMCTicker {
@@ -41,22 +50,27 @@ export interface CMCTicker {
 
 
 export function getCadPrices(tickers: Tickers): Prices {
-    const [btc, ltc, eth, rai] = [
+    const [btc, ltc, eth, xrb, ark, salt, trx] = [
         Big(tickers.btc.price_cad),
         Big(tickers.ltc.price_cad),
         Big(tickers.eth.price_cad),
         Big(tickers.xrb.price_cad),
+        Big(tickers.ark.price_cad),
+        Big(tickers.salt.price_cad),
+        Big(tickers.trx.price_cad),
     ];
 
     return {
         btc,
         ltc,
         eth,
-        rai
+        xrb,
+        ark,
+        salt,
+        trx
     };
 }
 
-const TICKERS = ['BTC', 'ETH', 'LTC', 'XRB'];
 
 export async function requestTickers(): Promise<Tickers> {
     const uAll = `https://api.coinmarketcap.com/v1/ticker/?convert=CAD`;

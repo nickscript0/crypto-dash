@@ -20,8 +20,8 @@ async function main() {
         const qcxDiffs = quadrigaDiffCoinMarketCap(cmcTickers, qcxPrices);
 
         zip([
-            [cmcTickers.btc, cmcTickers.ltc, cmcTickers.eth, cmcTickers.xrb],
-            [qcxDiffs.btc, qcxDiffs.ltc, qcxDiffs.eth, null]
+            [cmcTickers.btc, cmcTickers.ltc, cmcTickers.eth, cmcTickers.xrb, cmcTickers.ark, cmcTickers.salt, cmcTickers.trx],
+            [qcxDiffs.btc, qcxDiffs.ltc, qcxDiffs.eth, null, null, null, null]
         ]).forEach(el => {
             const price = el[0];
             const qDiff = el[1];
