@@ -15,7 +15,7 @@ export interface Tickers {
     btc: CMCTicker;
     ltc: CMCTicker;
     eth: CMCTicker;
-    rai: CMCTicker;
+    xrb: CMCTicker;
 }
 
 export interface CMCTicker {
@@ -39,12 +39,13 @@ export interface CMCTicker {
     "market_cap_cad": string;
 }
 
+
 export function getCadPrices(tickers: Tickers): Prices {
     const [btc, ltc, eth, rai] = [
         Big(tickers.btc.price_cad),
         Big(tickers.ltc.price_cad),
         Big(tickers.eth.price_cad),
-        Big(tickers.rai.price_cad),
+        Big(tickers.xrb.price_cad),
     ];
 
     return {
@@ -55,26 +56,25 @@ export function getCadPrices(tickers: Tickers): Prices {
     };
 }
 
-export async function requestTickers(): Promise<Tickers> {
-    const uBTC = `https://api.coinmarketcap.com/v1/ticker/bitcoin/?convert=CAD`;
-    const uLTC = `https://api.coinmarketcap.com/v1/ticker/litecoin/?convert=CAD`;
-    const uETH = `https://api.coinmarketcap.com/v1/ticker/ethereum/?convert=CAD`;
-    const uRAI = `https://api.coinmarketcap.com/v1/ticker/raiblocks/?convert=CAD`;
+const TICKERS = ['BTC', 'ETH', 'LTC', 'XRB'];
 
-    const [btc, ltc, eth, rai] = await Promise.all([
-        _getTicker(uBTC),
-        _getTicker(uLTC),
-        _getTicker(uETH),
-        _getTicker(uRAI)
-    ]);
-    return {
-        btc,
-        ltc,
-        eth,
-        rai
-    };
+export async function requestTickers(): Promise<Tickers> {
+    const uAll = `https://api.coinmarketcap.com/v1/ticker/?convert=CAD`;
+
+    const allTickers: CMCTicker[] = await _getTicker(uAll);
+
+    const filteredTickers = {};
+    let filterCount = 0;
+    for (const t of allTickers) {
+        if (TICKERS.includes(t.symbol)) {
+            filteredTickers[t.symbol.toLowerCase()] = t;
+            filterCount += 1;
+        }
+        if (filterCount === TICKERS.length) break;
+    }
+    return <Tickers>filteredTickers;
 }
 
 async function _getTicker(url) {
-    return JSON.parse((await request(url)).text)[0];
+    return JSON.parse((await request(url)).text);
 }
