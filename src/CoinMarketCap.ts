@@ -7,24 +7,14 @@ import { Big } from 'big.js';
 
 const TICKERS = ['BTC', 'ETH', 'LTC', 'XRB', 'ARK', 'SALT', 'TRX'];
 
-interface Prices {
-    btc: Big;
-    ltc: Big;
-    eth: Big;
-    xrb: Big;
-    ark: Big;
-    salt: Big;
-    trx: Big;
-}
-
-export interface Tickers {
-    btc: CMCTicker;
-    ltc: CMCTicker;
-    eth: CMCTicker;
-    xrb: CMCTicker;
-    ark: CMCTicker;
-    salt: CMCTicker;
-    trx: CMCTicker;
+export interface Currencies<T> {
+    btc: T;
+    ltc: T;
+    eth: T;
+    xrb: T;
+    ark: T;
+    salt: T;
+    trx: T;
 }
 
 export interface CMCTicker {
@@ -49,7 +39,7 @@ export interface CMCTicker {
 }
 
 
-export function getCadPrices(tickers: Tickers): Prices {
+export function getCadPrices(tickers: Currencies<CMCTicker>): Currencies<Big> {
     const [btc, ltc, eth, xrb, ark, salt, trx] = [
         Big(tickers.btc.price_cad),
         Big(tickers.ltc.price_cad),
@@ -72,7 +62,7 @@ export function getCadPrices(tickers: Tickers): Prices {
 }
 
 
-export async function requestTickers(): Promise<Tickers> {
+export async function requestTickers(): Promise<Currencies<CMCTicker>> {
     const uAll = `https://api.coinmarketcap.com/v1/ticker/?convert=CAD`;
 
     const allTickers: CMCTicker[] = await _getTicker(uAll);
@@ -86,7 +76,7 @@ export async function requestTickers(): Promise<Tickers> {
         }
         if (filterCount === TICKERS.length) break;
     }
-    return <Tickers>filteredTickers;
+    return <Currencies<CMCTicker>> filteredTickers;
 }
 
 async function _getTicker(url) {

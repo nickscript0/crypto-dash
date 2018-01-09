@@ -40,7 +40,7 @@ async function main() {
     }
 }
 
-function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinMarketCap.Tickers, qcxPrices: QuadrigaAPI.Prices) {
+function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTicker>, qcxPrices: QuadrigaAPI.Prices) {
     // Withdraw Price (plus miner fee) minus Deposit Price. This is the cut that shapeshift takes compared to market price.
     // The lower this number the better (i.e. the closer it is to market price).
     function tradeCost(
