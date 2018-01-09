@@ -38,27 +38,13 @@ export interface CMCTicker {
     "market_cap_cad": string;
 }
 
-
 export function getCadPrices(tickers: Currencies<CMCTicker>): Currencies<Big> {
-    const [btc, ltc, eth, xrb, ark, salt, trx] = [
-        Big(tickers.btc.price_cad),
-        Big(tickers.ltc.price_cad),
-        Big(tickers.eth.price_cad),
-        Big(tickers.xrb.price_cad),
-        Big(tickers.ark.price_cad),
-        Big(tickers.salt.price_cad),
-        Big(tickers.trx.price_cad),
-    ];
-
-    return {
-        btc,
-        ltc,
-        eth,
-        xrb,
-        ark,
-        salt,
-        trx
-    };
+    const o = {};
+    Object.entries(tickers).forEach( (e: [string, CMCTicker]) => {
+        const [k, v] = e;
+        o[k] = Big(v.price_cad);
+    });
+    return <Currencies<Big>> o;
 }
 
 
@@ -76,7 +62,7 @@ export async function requestTickers(): Promise<Currencies<CMCTicker>> {
         }
         if (filterCount === TICKERS.length) break;
     }
-    return <Currencies<CMCTicker>> filteredTickers;
+    return <Currencies<CMCTicker>>filteredTickers;
 }
 
 async function _getTicker(url) {
