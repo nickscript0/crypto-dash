@@ -1,3 +1,12 @@
+/**
+ * TODO: CSS cards
+ * - Semantic-ui: https://semantic-ui.com/examples/responsive.html or https://semantic-ui.com/elements/label.html
+ * - https://getuikit.com/docs/label
+ * - https://minicss.org/card
+ * - https://picnicss.com/tests
+ * 
+ */
+
 import { Big } from 'big.js';
 import * as moment from 'moment';
 

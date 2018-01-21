@@ -2,7 +2,6 @@ body {
     margin: 40px;
     /* font-family: "Open Sans", Arial, Helvetica, Sans-serif; */
     font-family: monospace;
-    font-size: 6vmin;
 }
 
 .wrapper {
@@ -19,10 +18,4 @@ body {
     padding: 20px;
     font-size: 100%;
     margin: 5px;
-}
-
-@media screen and (min-width: 1000px) {
-    body {
-        font-size: 1em; /* 6vmin; */
-    }
 }
