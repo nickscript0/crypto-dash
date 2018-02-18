@@ -29,16 +29,23 @@ async function main() {
         const qcxDiffs = quadrigaDiffCoinMarketCap(cmcTickers, qcxPrices);
 
         zip([
-            [cmcTickers.btc, cmcTickers.ltc, cmcTickers.eth, cmcTickers.xrb, cmcTickers.ark, cmcTickers.salt, cmcTickers.trx],
+            [cmcTickers.btc, cmcTickers.ltc, cmcTickers.eth, cmcTickers.nano, cmcTickers.ark, cmcTickers.salt, cmcTickers.trx],
             [qcxDiffs.btc, qcxDiffs.ltc, qcxDiffs.eth, null, null, null, null]
         ]).forEach(el => {
             const price = el[0];
             const qDiff = el[1];
-            let boxStr = `${price.symbol}\n` +
-                `Price: ${toCurrency(price.price_cad)}\n` +
-                `1h: ${price.percent_change_1h}%\n1d: ${price.percent_change_24h}%\n` +
-                `7d: ${price.percent_change_7d}%`;
-            if (qDiff) boxStr += `\nQcx Price: ${qDiff}`;
+            let boxStr = '';
+            try {
+                boxStr = `${price.symbol}\n` +
+                    `Price: ${toCurrency(price.price_cad)}\n` +
+                    `1h: ${price.percent_change_1h}%\n1d: ${price.percent_change_24h}%\n` +
+                    `7d: ${price.percent_change_7d}%`;
+                if (qDiff) boxStr += `\nQcx Price: ${qDiff}`;
+            } catch (e) {
+                boxStr = `Error: unable to load ticker, see console for more info.`;
+                console.log(e);
+            }
+
             addBox(boxStr, dash, true);
         });
 
@@ -126,10 +133,10 @@ function getShapeshiftStats(shapeshiftCoins) {
     const { addedCoins, removedCoins } = ShapeshiftIO.addedRemovedCoins(shapeshiftCoins);
     const addedCoinsText = addedCoins.size > 0 ? `\nAdded Coins: ${[...addedCoins].join(',')}` : '';
     const removedCoinsText = removedCoins.size > 0 ? `\nRemoved Coins: ${[...removedCoins].join(',')}` : '';
-    const xrbExistTextFrag = ShapeshiftIO.xrbAvailable(shapeshiftCoins) ? 'exists on' : 'does not exist on';
-    const xrbExistText = `\nRaiBlocks (XRB) ${xrbExistTextFrag} Shapeshift.io`;
+    const nanoExistTextFrag = ShapeshiftIO.nanoAvailable(shapeshiftCoins) ? 'exists on' : 'does not exist on';
+    const nanoExistText = `\nNano (NANO) ${nanoExistTextFrag} Shapeshift.io`;
     return `Shapeshift.io has ${ssCounts.percentAvailable}% coins available (${ssCounts.unavailable} unavailable)` +
-        xrbExistText + addedCoinsText + removedCoinsText;
+        nanoExistText + addedCoinsText + removedCoinsText;
 }
 
 function zip(rows) {

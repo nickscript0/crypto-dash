@@ -86,13 +86,13 @@ export function availabilityCount(coins: Coins) {
     };
 }
 
-export function xrbAvailable(coins: Coins): boolean {
-    const XRB_NAME = 'raiblocks';
-    const XRB_SYMBOL = 'xrb';
-    const filterXrb = Object.values(coins)
-        .filter(c => c.name.toLowerCase().includes(XRB_NAME) ||
-            c.symbol.toLowerCase().includes(XRB_SYMBOL));
-    return filterXrb.length > 0;
+export function nanoAvailable(coins: Coins): boolean {
+    const NANO_NAME = 'nano';
+    const NANO_SYMBOL = 'nano';
+    const filterNano = Object.values(coins)
+        .filter(c => c.name.toLowerCase().includes(NANO_NAME) ||
+            c.symbol.toLowerCase().includes(NANO_SYMBOL));
+    return filterNano.length > 0;
 }
 
 // All shapeshift.io coins updated Jan 3, 2017 from

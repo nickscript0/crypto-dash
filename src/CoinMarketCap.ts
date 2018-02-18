@@ -5,13 +5,13 @@ import * as request from "superagent";
 import { Big } from 'big.js';
 
 
-const TICKERS = ['BTC', 'ETH', 'LTC', 'XRB', 'ARK', 'SALT', 'TRX'];
+const TICKERS = ['BTC', 'ETH', 'LTC', 'NANO', 'ARK', 'SALT', 'TRX'];
 
 export interface Currencies<T> {
     btc: T;
     ltc: T;
     eth: T;
-    xrb: T;
+    nano: T;
     ark: T;
     salt: T;
     trx: T;
