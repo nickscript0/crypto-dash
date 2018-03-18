@@ -52,8 +52,30 @@ async function main() {
         addBox(shapeshiftPairStats(await ssPairsPromise, cmcTickers, qcxPrices), dash, true);
         addBox(getShapeshiftStats(await ssCoinsPromise), dash, true);
 
+        addBox(nanoPerLtcText(cmcTickers), dash, true);
+
         updateLoadTime();
     }
+}
+
+function nanoPerLtcText(cmcTickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTicker>): string {
+    const ltcNow = Big(cmcTickers.ltc.price_cad);
+    const nanoNow = Big(cmcTickers.nano.price_cad);
+    const nanoPerLtcNow = ltcNow.div(nanoNow);
+
+    function nanoLtcPercentChange(percentChangePropname: string): string {
+        const ltcBefore = ltcNow.div(Big(cmcTickers.ltc[percentChangePropname]).div(100).plus(1));
+        const nanoBefore = nanoNow.div(Big(cmcTickers.nano[percentChangePropname]).div(100).plus(1));
+        const nanoPerLtcBefore = ltcBefore.div(nanoBefore);
+        return percentMore(nanoPerLtcNow, nanoPerLtcBefore, true);
+    }
+    const week = nanoLtcPercentChange('percent_change_7d');
+    const day = nanoLtcPercentChange('percent_change_24h');
+    const hour = nanoLtcPercentChange('percent_change_1h');
+    return `NANO per LTC\n` +
+        `Value: ${nanoPerLtcNow.toFixed(2)}\n` +
+        `1h: ${hour}\n1d: ${day}\n` +
+        `7d: ${week}\n(higher NANO cheaper)`;
 }
 
 function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTicker>, qcxPrices: QuadrigaAPI.Prices) {
