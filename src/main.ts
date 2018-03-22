@@ -8,7 +8,7 @@
  */
 
 import { Big } from 'big.js';
-import * as moment from 'moment';
+import { formatDistance, isAfter, format } from 'date-fns';
 
 import * as CoinMarketCap from "./CoinMarketCap";
 import * as QuadrigaAPI from "./QuadrigaAPI";
@@ -120,15 +120,21 @@ function addBox(text: string, dash: HTMLElement, pre = false) {
     dash.appendChild(div);
 }
 
-function updateLoadTime(loadTime: moment.Moment | null = null) {
+function updateLoadTime(loadTime: Date | null = null) {
     const tsEl = document.getElementById('timestamp');
-    if (!loadTime) loadTime = moment();
+    if (!loadTime) loadTime = new Date();
     if (tsEl) {
-        const absTime = loadTime.format('MMMM Do YYYY, h:mm:ss a');
-        const relTime = loadTime.fromNow();
+        const absTime = format(loadTime, 'MMMM Do YYYY, h:mm:ss a');
+        const relTime = fromNow(loadTime);
         tsEl.textContent = `Updated: ${absTime} (${relTime})`;
     }
     setTimeout(updateLoadTime, 10000, loadTime);
+}
+
+function fromNow(otherDate: Date) {
+    const now = new Date();
+    const relString = formatDistance(now, otherDate);
+    return isAfter(otherDate, now) ? `in ${relString}` : `${relString} ago`;
 }
 
 const CURRENCIES = ['BTC', 'LTC', 'ETH'];
