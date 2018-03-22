@@ -9,6 +9,7 @@
 
 import { Big } from 'big.js';
 import { formatDistance, isAfter, format } from 'date-fns';
+import { h, createProjector } from 'maquette';
 
 import * as CoinMarketCap from "./CoinMarketCap";
 import * as QuadrigaAPI from "./QuadrigaAPI";
@@ -16,6 +17,7 @@ import * as ShapeshiftIO from "./ShapeshiftIO";
 
 async function main() {
     const dash = document.getElementById('dash');
+    const boxes: string[] = [];
 
     if (dash) {
         // This is slightly faster than "await Promise.all" as it won't block waiting for all requests to complete
@@ -46,16 +48,32 @@ async function main() {
                 console.log(e);
             }
 
-            addBox(boxStr, dash, true);
+            boxes.push(boxStr);
         });
 
-        addBox(shapeshiftPairStats(await ssPairsPromise, cmcTickers, qcxPrices), dash, true);
-        addBox(getShapeshiftStats(await ssCoinsPromise), dash, true);
+        boxes.push(shapeshiftPairStats(await ssPairsPromise, cmcTickers, qcxPrices));
+        boxes.push(getShapeshiftStats(await ssCoinsPromise));
+        boxes.push(nanoPerLtcText(cmcTickers));
 
-        addBox(nanoPerLtcText(cmcTickers), dash, true);
 
+        renderDom(boxes);
         updateLoadTime();
     }
+}
+
+function renderDom(boxes: string[]) {
+    const projector = createProjector();
+    const vBoxes = boxes.map(boxText => {
+        const lines = boxText.split('\n').map(line => h('div', [line]));
+        return h('div.box', [lines]);
+    });
+
+    function render() {
+        return h('div.wrapper', vBoxes);
+    }
+    const dash = document.getElementById('dash');
+    if (!dash) throw Error('No dash id found');
+    projector.append(dash, render);
 }
 
 function nanoPerLtcText(cmcTickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTicker>): string {
@@ -110,14 +128,6 @@ function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinM
         tradeCost(tickers.eth, tickers.ltc, qcxPrices.eth, qcxPrices.ltc, pairs.eth_ltc),
     ].map(r => `${r.name}: ${r.percent} (Qcx: ${r.qcxPercent}) (Miner Fee: ${r.minerFee})`);
     return 'Shapeshift.io premiums (incl. miner fee):\n' + results.join('\n');
-}
-
-function addBox(text: string, dash: HTMLElement, pre = false) {
-    const tagName = pre ? 'pre' : 'div';
-    const div = document.createElement(tagName);
-    div.textContent = text;
-    div.className = 'box';
-    dash.appendChild(div);
 }
 
 function updateLoadTime(loadTime: Date | null = null) {
