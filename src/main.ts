@@ -17,11 +17,18 @@ import * as ShapeshiftIO from "./ShapeshiftIO";
 
 class Field {
     name: string;
-    value: string | undefined;
+    values: ColoredValue[] | undefined;
+    constructor(name, values: ColoredValue[] | undefined = undefined) {
+        this.name = name;
+        this.values = values;
+    }
+}
+
+class ColoredValue {
+    value: string;
     isPositive: boolean | undefined;
 
-    constructor(name, value: string | undefined = undefined, isPositive: boolean | undefined = undefined) {
-        this.name = name;
+    constructor(value: string, isPositive: boolean | undefined = undefined) {
         this.value = value;
         this.isPositive = isPositive;
     }
@@ -58,9 +65,9 @@ async function main() {
                 //     `7d: ${price.percent_change_7d}%`;
                 box.push(new Field(`${price.symbol}`));
                 box.push(new Field(`Price: ${toCurrency(price.price_cad)}\n`));
-                box.push(new Field(`1h:`, `${price.percent_change_1h}%\n`, Big(price.percent_change_1h).gt(0)));
-                box.push(new Field(`1d:`, `${price.percent_change_24h}%\n`, Big(price.percent_change_24h).gt(0)));
-                box.push(new Field(`7d:`, `${price.percent_change_7d}%\n`, Big(price.percent_change_7d).gt(0)));
+                box.push(new Field(`1h:`, [new ColoredValue(`${price.percent_change_1h}%\n`, Big(price.percent_change_1h).gt(0))]));
+                box.push(new Field(`1d:`, [new ColoredValue(`${price.percent_change_24h}%\n`, Big(price.percent_change_24h).gt(0))]));
+                box.push(new Field(`7d:`, [new ColoredValue(`${price.percent_change_7d}%\n`, Big(price.percent_change_7d).gt(0))]));
                 if (qDiff) boxStr += `\nQcx Price: ${qDiff}`;
             } catch (e) {
                 // boxStr = `Error: unable to load ticker, see console for more info.`;
@@ -85,9 +92,10 @@ function renderDom(fields2d: Field[][]) {
     const projector = createProjector();
     const vBoxes = fields2d.map(fields => {
         const lines = fields.map(field => {
-            const els: VNodeChild = [field.name];
-            if (field.value) {
-                els.push(h(field.isPositive ? 'span.positive-val' : 'span.negative-val', [field.value]));
+            let els: VNodeChild = [field.name];
+            if (field.values) {
+                const valueEls = field.values.map(cv => h(cv.isPositive ? 'span.positive-val' : 'span.negative-val', [cv.value]));
+                els = els.concat(valueEls);
             }
             return h('div', els);
         });
@@ -119,8 +127,10 @@ function nanoPerLtcText(cmcTickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTi
     return [
         new Field(`NANO per LTC`),
         new Field(`Value: ${nanoPerLtcNow.toFixed(2)}`),
-        new Field(`1h: ${hour}\n1d: ${day}\n`),
-        new Field(`7d: ${week}\n(higher NANO cheaper`)
+        new Field(`1h:`, [new ColoredValue(`${hour}`, Big(hour.slice(0, -1).trim()).lt(0))]),
+        new Field(`1d:`, [new ColoredValue(`${day}`, Big(day.slice(0, -1).trim()).lt(0))]),
+        new Field(`7d:`, [new ColoredValue(`${week}`, Big(week.slice(0, -1).trim()).lt(0))]),
+        // new Field(`7d: ${week}\n(higher NANO cheaper`)
     ];
 }
 

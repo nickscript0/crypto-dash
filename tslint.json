@@ -10,6 +10,8 @@
         "member-access": false,
         "no-consecutive-blank-lines": false,
         "trailing-comma": false,
-        "arrow-parens": false
+        "arrow-parens": false,
+        "max-classes-per-file": false,
+        "max-line-length": false
     }
 }
