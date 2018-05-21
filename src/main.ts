@@ -44,7 +44,7 @@ async function main() {
                 box.push(h('div', [`1h:`, coloredVNChild(`${price.percent_change_1h}%`, Big(price.percent_change_1h).gt(0))]));
                 box.push(h('div', [`1d:`, coloredVNChild(`${price.percent_change_24h}%`, Big(price.percent_change_24h).gt(0))]));
                 box.push(h('div', [`7d:`, coloredVNChild(`${price.percent_change_7d}%`, Big(price.percent_change_7d).gt(0))]));
-                if (qDiff) box.push(h('div', [`\nQcx Price: ${qDiff}`]));
+                if (qDiff) box.push(h('div', [`\nQcx Price:`, coloredVNChild(`${qDiff}`, pctToBig(qDiff).gt(0))]));
             } catch (e) {
                 box.push(`Error: unable to load ticker, see console for more info.`);
                 console.log(e);
