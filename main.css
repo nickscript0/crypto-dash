@@ -19,3 +19,13 @@ body {
     font-size: 100%;
     margin: 5px;
 }
+
+.positive-val {
+    padding-left: 5px;
+    color: forestgreen;
+}
+
+.negative-val {
+    padding-left: 5px;
+    color: crimson;
+}

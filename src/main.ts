@@ -9,15 +9,27 @@
 
 import { Big } from 'big.js';
 import { formatDistance, isAfter, format } from 'date-fns';
-import { h, createProjector } from 'maquette';
+import { h, createProjector, VNodeChild } from 'maquette';
 
 import * as CoinMarketCap from "./CoinMarketCap";
 import * as QuadrigaAPI from "./QuadrigaAPI";
 import * as ShapeshiftIO from "./ShapeshiftIO";
 
+class Field {
+    name: string;
+    value: string | undefined;
+    isPositive: boolean | undefined;
+
+    constructor(name, value: string | undefined = undefined, isPositive: boolean | undefined = undefined) {
+        this.name = name;
+        this.value = value;
+        this.isPositive = isPositive;
+    }
+}
+
 async function main() {
     const dash = document.getElementById('dash');
-    const boxes: string[] = [];
+    const boxes: Field[][] = [];
 
     if (dash) {
         // This is slightly faster than "await Promise.all" as it won't block waiting for all requests to complete
@@ -30,25 +42,33 @@ async function main() {
         const qcxPrices = await qcxPricesPromise;
         const qcxDiffs = quadrigaDiffCoinMarketCap(cmcTickers, qcxPrices);
 
+
         zip([
             [cmcTickers.btc, cmcTickers.ltc, cmcTickers.eth, cmcTickers.nano, cmcTickers.ark, cmcTickers.salt, cmcTickers.trx],
             [qcxDiffs.btc, qcxDiffs.ltc, qcxDiffs.eth, null, null, null, null]
         ]).forEach(el => {
-            const price = el[0];
-            const qDiff = el[1];
+            const price: CoinMarketCap.CMCTicker = el[0];
+            const qDiff: string = el[1];
             let boxStr = '';
+            const box: Field[] = [];
             try {
-                boxStr = `${price.symbol}\n` +
-                    `Price: ${toCurrency(price.price_cad)}\n` +
-                    `1h: ${price.percent_change_1h}%\n1d: ${price.percent_change_24h}%\n` +
-                    `7d: ${price.percent_change_7d}%`;
+                // boxStr = `${price.symbol}\n` +
+                //     `Price: ${toCurrency(price.price_cad)}\n` +
+                //     `1h: ${price.percent_change_1h}%\n1d: ${price.percent_change_24h}%\n` +
+                //     `7d: ${price.percent_change_7d}%`;
+                box.push(new Field(`${price.symbol}`));
+                box.push(new Field(`Price: ${toCurrency(price.price_cad)}\n`));
+                box.push(new Field(`1h:`, `${price.percent_change_1h}%\n`, Big(price.percent_change_1h).gt(0)));
+                box.push(new Field(`1d:`, `${price.percent_change_24h}%\n`, Big(price.percent_change_24h).gt(0)));
+                box.push(new Field(`7d:`, `${price.percent_change_7d}%\n`, Big(price.percent_change_7d).gt(0)));
                 if (qDiff) boxStr += `\nQcx Price: ${qDiff}`;
             } catch (e) {
-                boxStr = `Error: unable to load ticker, see console for more info.`;
+                // boxStr = `Error: unable to load ticker, see console for more info.`;
+                box.push(new Field(`Error: unable to load ticker, see console for more info.`))
                 console.log(e);
             }
 
-            boxes.push(boxStr);
+            boxes.push(box);
         });
 
         boxes.push(shapeshiftPairStats(await ssPairsPromise, cmcTickers, qcxPrices));
@@ -61,10 +81,16 @@ async function main() {
     }
 }
 
-function renderDom(boxes: string[]) {
+function renderDom(fields2d: Field[][]) {
     const projector = createProjector();
-    const vBoxes = boxes.map(boxText => {
-        const lines = boxText.split('\n').map(line => h('div', [line]));
+    const vBoxes = fields2d.map(fields => {
+        const lines = fields.map(field => {
+            const els: VNodeChild = [field.name];
+            if (field.value) {
+                els.push(h(field.isPositive ? 'span.positive-val' : 'span.negative-val', [field.value]));
+            }
+            return h('div', els);
+        });
         return h('div.box', [lines]);
     });
 
@@ -76,7 +102,7 @@ function renderDom(boxes: string[]) {
     projector.append(dash, render);
 }
 
-function nanoPerLtcText(cmcTickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTicker>): string {
+function nanoPerLtcText(cmcTickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTicker>): Field[] {
     const ltcNow = Big(cmcTickers.ltc.price_cad);
     const nanoNow = Big(cmcTickers.nano.price_cad);
     const nanoPerLtcNow = ltcNow.div(nanoNow);
@@ -90,13 +116,15 @@ function nanoPerLtcText(cmcTickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTi
     const week = nanoLtcPercentChange('percent_change_7d');
     const day = nanoLtcPercentChange('percent_change_24h');
     const hour = nanoLtcPercentChange('percent_change_1h');
-    return `NANO per LTC\n` +
-        `Value: ${nanoPerLtcNow.toFixed(2)}\n` +
-        `1h: ${hour}\n1d: ${day}\n` +
-        `7d: ${week}\n(higher NANO cheaper)`;
+    return [
+        new Field(`NANO per LTC`),
+        new Field(`Value: ${nanoPerLtcNow.toFixed(2)}`),
+        new Field(`1h: ${hour}\n1d: ${day}\n`),
+        new Field(`7d: ${week}\n(higher NANO cheaper`)
+    ];
 }
 
-function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTicker>, qcxPrices: QuadrigaAPI.Prices) {
+function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTicker>, qcxPrices: QuadrigaAPI.Prices): Field[] {
     // Withdraw Price (plus miner fee) minus Deposit Price. This is the cut that shapeshift takes compared to market price.
     // The lower this number the better (i.e. the closer it is to market price).
     function tradeCost(
@@ -127,7 +155,9 @@ function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinM
         tradeCost(tickers.ltc, tickers.eth, qcxPrices.ltc, qcxPrices.eth, pairs.ltc_eth),
         tradeCost(tickers.eth, tickers.ltc, qcxPrices.eth, qcxPrices.ltc, pairs.eth_ltc),
     ].map(r => `${r.name}: ${r.percent} (Qcx: ${r.qcxPercent}) (Miner Fee: ${r.minerFee})`);
-    return 'Shapeshift.io premiums (incl. miner fee):\n' + results.join('\n');
+    const fields = results.map(r => new Field(r));
+    fields.unshift(new Field('Shapeshift.io premiums (incl. miner fee):'));
+    return fields;
 }
 
 function updateLoadTime(loadTime: Date | null = null) {
@@ -173,8 +203,12 @@ function getShapeshiftStats(shapeshiftCoins) {
     const removedCoinsText = removedCoins.size > 0 ? `\nRemoved Coins: ${[...removedCoins].join(',')}` : '';
     const nanoExistTextFrag = ShapeshiftIO.nanoAvailable(shapeshiftCoins) ? 'exists on' : 'does not exist on';
     const nanoExistText = `\nNano (NANO) ${nanoExistTextFrag} Shapeshift.io`;
-    return `Shapeshift.io has ${ssCounts.percentAvailable}% coins available (${ssCounts.unavailable} unavailable)` +
-        nanoExistText + addedCoinsText + removedCoinsText;
+    return [
+        new Field(`Shapeshift.io has ${ssCounts.percentAvailable}% coins available (${ssCounts.unavailable} unavailable)`),
+        new Field(nanoExistText),
+        new Field(addedCoinsText),
+        new Field(removedCoinsText)
+    ];
 }
 
 function zip(rows) {
