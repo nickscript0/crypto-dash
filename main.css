@@ -1,5 +1,5 @@
 body {
-    margin: 40px;
+    margin: 40px !important;
     /* font-family: "Open Sans", Arial, Helvetica, Sans-serif; */
     font-family: monospace;
 }
@@ -18,4 +18,10 @@ body {
     padding: 20px;
     font-size: 100%;
     margin: 5px;
+    font-family: monospace;
+}
+
+.table-container {
+    margin: 40px;
+    width: 60%;
 }

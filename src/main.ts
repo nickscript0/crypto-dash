@@ -1,4 +1,7 @@
 /**
+ * TODO: Oops I made the UI synchronous (waits for all data) when I switched to maquette.js
+ */
+/**
  * TODO: CSS cards
  * - Semantic-ui: https://semantic-ui.com/examples/responsive.html or https://semantic-ui.com/elements/label.html
  * - https://getuikit.com/docs/label
@@ -9,7 +12,7 @@
 
 import { Big } from 'big.js';
 import { formatDistance, isAfter, format } from 'date-fns';
-import { h, createProjector } from 'maquette';
+import { h, createProjector, VNode } from 'maquette';
 
 import * as CoinMarketCap from "./CoinMarketCap";
 import * as QuadrigaAPI from "./QuadrigaAPI";
@@ -69,7 +72,10 @@ function renderDom(boxes: string[]) {
     });
 
     function render() {
-        return h('div.wrapper', vBoxes);
+        return h('div', [
+            h('div.wrapper', vBoxes),
+            h('div.table-container', [table()])
+        ]);
     }
     const dash = document.getElementById('dash');
     if (!dash) throw Error('No dash id found');
@@ -193,6 +199,47 @@ function toCurrency(n: string | Big) {
         style: 'currency',
         currency: 'USD',
     });
+}
+
+// <table class="table">
+//   <thead>
+//     <tr>
+//       <th scope="col">#</th>
+//       <th scope="col">First</th>
+//       <th scope="col">Last</th>
+//       <th scope="col">Handle</th>
+//     </tr>
+//   </thead>
+//   <tbody>
+//     <tr>
+//       <th scope="row">1</th>
+//       <td>Mark</td>
+//       <td>Otto</td>
+//       <td>@mdo</td>
+//     </tr>
+//     <tr>
+//       <th scope="row">2</th>
+//       <td>Jacob</td>
+//       <td>Thornton</td>
+//       <td>@fat</td>
+//     </tr>
+//     <tr>
+//       <th scope="row">3</th>
+//       <td>Larry</td>
+//       <td>the Bird</td>
+//       <td>@twitter</td>
+//     </tr>
+//   </tbody>
+// </table>
+function table(): VNode {
+    // rows
+    const FIELDS = ['Name', 'Value', '1h', '1d', '7d'];
+    const VALUES = ['NANO per LTC', '20.91', '3.63%', '7.26%', '12.30%'];
+    return h('table.table', [
+        h('thead', [h('tr', FIELDS.map(f => h('th', { scope: 'col' }, [f])))]),
+        h('tbody', [h('tr', VALUES.map(f => h('td', [f])))])
+    ]);
+
 }
 
 main();
