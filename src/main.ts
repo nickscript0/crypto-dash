@@ -15,28 +15,9 @@ import * as CoinMarketCap from "./CoinMarketCap";
 import * as QuadrigaAPI from "./QuadrigaAPI";
 import * as ShapeshiftIO from "./ShapeshiftIO";
 
-class Field {
-    name: string;
-    values: ColoredValue[] | undefined;
-    constructor(name, values: ColoredValue[] | undefined = undefined) {
-        this.name = name;
-        this.values = values;
-    }
-}
-
-class ColoredValue {
-    value: string;
-    isPositive: boolean | undefined;
-
-    constructor(value: string, isPositive: boolean | undefined = undefined) {
-        this.value = value;
-        this.isPositive = isPositive;
-    }
-}
-
 async function main() {
     const dash = document.getElementById('dash');
-    const boxes: Field[][] = [];
+    const boxes: VNodeChild[] = [];
 
     if (dash) {
         // This is slightly faster than "await Promise.all" as it won't block waiting for all requests to complete
@@ -56,31 +37,25 @@ async function main() {
         ]).forEach(el => {
             const price: CoinMarketCap.CMCTicker = el[0];
             const qDiff: string = el[1];
-            let boxStr = '';
-            const box: Field[] = [];
+            const box: VNodeChild[] = [];
             try {
-                // boxStr = `${price.symbol}\n` +
-                //     `Price: ${toCurrency(price.price_cad)}\n` +
-                //     `1h: ${price.percent_change_1h}%\n1d: ${price.percent_change_24h}%\n` +
-                //     `7d: ${price.percent_change_7d}%`;
-                box.push(new Field(`${price.symbol}`));
-                box.push(new Field(`Price: ${toCurrency(price.price_cad)}\n`));
-                box.push(new Field(`1h:`, [new ColoredValue(`${price.percent_change_1h}%\n`, Big(price.percent_change_1h).gt(0))]));
-                box.push(new Field(`1d:`, [new ColoredValue(`${price.percent_change_24h}%\n`, Big(price.percent_change_24h).gt(0))]));
-                box.push(new Field(`7d:`, [new ColoredValue(`${price.percent_change_7d}%\n`, Big(price.percent_change_7d).gt(0))]));
-                if (qDiff) boxStr += `\nQcx Price: ${qDiff}`;
+                box.push(h('div', [`${price.symbol}`]));
+                box.push(h('div', [`Price: ${toCurrency(price.price_cad)}`]));
+                box.push(h('div', [`1h:`, coloredVNChild(`${price.percent_change_1h}%`, Big(price.percent_change_1h).gt(0))]));
+                box.push(h('div', [`1d:`, coloredVNChild(`${price.percent_change_24h}%`, Big(price.percent_change_24h).gt(0))]));
+                box.push(h('div', [`7d:`, coloredVNChild(`${price.percent_change_7d}%`, Big(price.percent_change_7d).gt(0))]));
+                if (qDiff) box.push(h('div', [`\nQcx Price: ${qDiff}`]));
             } catch (e) {
-                // boxStr = `Error: unable to load ticker, see console for more info.`;
-                box.push(new Field(`Error: unable to load ticker, see console for more info.`))
+                box.push(`Error: unable to load ticker, see console for more info.`);
                 console.log(e);
             }
 
-            boxes.push(box);
+            boxes.push(h('div.box', box));
         });
 
-        boxes.push(shapeshiftPairStats(await ssPairsPromise, cmcTickers, qcxPrices));
-        boxes.push(getShapeshiftStats(await ssCoinsPromise));
-        boxes.push(nanoPerLtcText(cmcTickers));
+        boxes.push(h('div.box', shapeshiftPairStats(await ssPairsPromise, cmcTickers, qcxPrices)));
+        boxes.push(h('div.box', getShapeshiftStats(await ssCoinsPromise)));
+        boxes.push(h('div.box', nanoPerLtcText(cmcTickers)));
 
 
         renderDom(boxes);
@@ -88,20 +63,8 @@ async function main() {
     }
 }
 
-function renderDom(fields2d: Field[][]) {
+function renderDom(vBoxes: VNodeChild[]) {
     const projector = createProjector();
-    const vBoxes = fields2d.map(fields => {
-        const lines = fields.map(field => {
-            let els: VNodeChild = [field.name];
-            if (field.values) {
-                const valueEls = field.values.map(cv => h(cv.isPositive ? 'span.positive-val' : 'span.negative-val', [cv.value]));
-                els = els.concat(valueEls);
-            }
-            return h('div', els);
-        });
-        return h('div.box', [lines]);
-    });
-
     function render() {
         return h('div.wrapper', vBoxes);
     }
@@ -110,7 +73,7 @@ function renderDom(fields2d: Field[][]) {
     projector.append(dash, render);
 }
 
-function nanoPerLtcText(cmcTickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTicker>): Field[] {
+function nanoPerLtcText(cmcTickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTicker>): VNodeChild[] {
     const ltcNow = Big(cmcTickers.ltc.price_cad);
     const nanoNow = Big(cmcTickers.nano.price_cad);
     const nanoPerLtcNow = ltcNow.div(nanoNow);
@@ -125,16 +88,15 @@ function nanoPerLtcText(cmcTickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTi
     const day = nanoLtcPercentChange('percent_change_24h');
     const hour = nanoLtcPercentChange('percent_change_1h');
     return [
-        new Field(`NANO per LTC`),
-        new Field(`Value: ${nanoPerLtcNow.toFixed(2)}`),
-        new Field(`1h:`, [new ColoredValue(`${hour}`, Big(hour.slice(0, -1).trim()).lt(0))]),
-        new Field(`1d:`, [new ColoredValue(`${day}`, Big(day.slice(0, -1).trim()).lt(0))]),
-        new Field(`7d:`, [new ColoredValue(`${week}`, Big(week.slice(0, -1).trim()).lt(0))]),
-        // new Field(`7d: ${week}\n(higher NANO cheaper`)
+        h('div', [`NANO per LTC`]),
+        h('div', [`Value: ${nanoPerLtcNow.toFixed(2)}`]),
+        h('div', [`1h:`, [coloredVNChild(`${hour}`, pctToBig(hour).lt(0))]]),
+        h('div', [`1d:`, [coloredVNChild(`${day}`, pctToBig(day).lt(0))]]),
+        h('div', [`7d:`, [coloredVNChild(`${week}`, pctToBig(week).lt(0))]])
     ];
 }
 
-function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTicker>, qcxPrices: QuadrigaAPI.Prices): Field[] {
+function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinMarketCap.Currencies<CoinMarketCap.CMCTicker>, qcxPrices: QuadrigaAPI.Prices): VNodeChild[] {
     // Withdraw Price (plus miner fee) minus Deposit Price. This is the cut that shapeshift takes compared to market price.
     // The lower this number the better (i.e. the closer it is to market price).
     function tradeCost(
@@ -164,10 +126,18 @@ function shapeshiftPairStats(pairs: ShapeshiftIO.MarketInfoPairs, tickers: CoinM
         tradeCost(tickers.eth, tickers.btc, qcxPrices.eth, qcxPrices.btc, pairs.eth_btc),
         tradeCost(tickers.ltc, tickers.eth, qcxPrices.ltc, qcxPrices.eth, pairs.ltc_eth),
         tradeCost(tickers.eth, tickers.ltc, qcxPrices.eth, qcxPrices.ltc, pairs.eth_ltc),
-    ].map(r => `${r.name}: ${r.percent} (Qcx: ${r.qcxPercent}) (Miner Fee: ${r.minerFee})`);
-    const fields = results.map(r => new Field(r));
-    fields.unshift(new Field('Shapeshift.io premiums (incl. miner fee):'));
-    return fields;
+    ].map(r => {
+        const vns: VNodeChild = h('div', [
+            `${r.name}: `,
+            coloredVNChild(r.percent, pctToBig(r.percent).lt(0)),
+            ` (Qcx: `,
+            coloredVNChild(r.qcxPercent, pctToBig(r.qcxPercent).lt(0)),
+            `) (Miner Fee: ${r.minerFee})`
+        ]);
+        return vns;
+    });
+    results.unshift(h('div', ['Shapeshift.io premiums (incl. miner fee):']));
+    return results;
 }
 
 function updateLoadTime(loadTime: Date | null = null) {
@@ -214,10 +184,10 @@ function getShapeshiftStats(shapeshiftCoins) {
     const nanoExistTextFrag = ShapeshiftIO.nanoAvailable(shapeshiftCoins) ? 'exists on' : 'does not exist on';
     const nanoExistText = `\nNano (NANO) ${nanoExistTextFrag} Shapeshift.io`;
     return [
-        new Field(`Shapeshift.io has ${ssCounts.percentAvailable}% coins available (${ssCounts.unavailable} unavailable)`),
-        new Field(nanoExistText),
-        new Field(addedCoinsText),
-        new Field(removedCoinsText)
+        h('div', [`Shapeshift.io has ${ssCounts.percentAvailable}% coins available (${ssCounts.unavailable} unavailable)`]),
+        h('div', [nanoExistText]),
+        h('div', [addedCoinsText]),
+        h('div', [removedCoinsText])
     ];
 }
 
@@ -237,6 +207,14 @@ function toCurrency(n: string | Big) {
         style: 'currency',
         currency: 'USD',
     });
+}
+
+function pctToBig(s: string) {
+    return Big(s.slice(0, -1).trim());
+}
+
+function coloredVNChild(value: string, positive: boolean | undefined) {
+    return h(positive ? 'span.positive-val' : 'span.negative-val', [value]);
 }
 
 main();
